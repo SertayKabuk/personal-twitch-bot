@@ -98,17 +98,6 @@ namespace DoberDogBot.Worker
 
                 CreatePubSubClient();
 
-                await Task.Delay(10000);
-
-                List<Task> tasklist = new List<Task>();
-
-                for (int i = 0; i < 1; i++)
-                {
-                    tasklist.Add(DoSomething());
-                }
-
-                await Task.WhenAll(tasklist);
-
                 //3 hour refresh
                 botTokenTimer = new System.Timers.Timer((1000 * botAuthTokenResult.Value) - (1000 * 60 * 30));
                 botTokenTimer.Elapsed += ReconnectPubSub;
@@ -121,42 +110,6 @@ namespace DoberDogBot.Worker
             {
                 _logger.LogCritical(ex, ex.Message);
             }
-        }
-
-        Task DoSomething()
-        {
-            return Task.Run(() =>
-            {
-                using var sss = _scopeFactory.CreateScope();
-                var mediator = sss.ServiceProvider.GetRequiredService<IMediator>();
-
-                mediator.Send(new SubscriberCommand
-                {
-                    Channel = _twitchOption.Channel,
-                    TwitchClient = _client,
-                    BotId = botId,
-                    ChannelId = _twitchOption.ChannelId,
-                    ChannelName = _twitchOption.Channel,
-                    Context = "test",
-                    CumulativeMonths = null,
-                    DisplayName = "test",
-                    IsGift = null,
-                    Months = null,
-                    MultiMonthDuration = null,
-                    RecipientDisplayName = "test",
-                    RecipientId = "test",
-                    RecipientName = "test",
-                    StreakMonths = null,
-                    SubMessage = "test",
-                    SubscriptionPlan = "test",
-                    SubscriptionPlanName = "test",
-                    Time = DateTime.Now,
-                    UserId = "test",
-                    Username = "test",
-                    BotOption = _botOptions,
-                    SessionId = sessionId
-                }).GetAwaiter().GetResult();
-            });
         }
 
         private async Task CreateIRCClient()
