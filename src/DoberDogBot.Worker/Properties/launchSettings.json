@@ -1,0 +1,28 @@
+{
+  "profiles": {
+    "DoberDogBot.Worker.Development": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Development"
+      },
+      "dotnetRunMessages": "true"
+    },
+    "DoberDogBot.Worker.Staging": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Staging"
+      },
+      "dotnetRunMessages": "true"
+    },
+    "DoberDogBot.Worker.Production": {
+      "commandName": "Project",
+      "environmentVariables": {
+        "DOTNET_ENVIRONMENT": "Production"
+      },
+      "dotnetRunMessages": "true"
+    },
+    "Docker": {
+      "commandName": "Docker"
+    }
+  }
+}

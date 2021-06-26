@@ -1,0 +1,134 @@
+﻿@page "/fetchdata"
+@attribute [Authorize]
+
+@using DoberDogBot.UI.Data
+@using DoberDogBot.Domain.AggregatesModel.BitAggregate;
+@using DoberDogBot.Domain.AggregatesModel.SubscriberAggregate;
+@using DoberDogBot.Domain.AggregatesModel.TipAggregate;
+@inject TwitchService TwitchService
+
+@if (subscribers == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card bg-dark mt-4">
+        <div class="card-body">
+            <h2 class="card-title text-danger text-center">Aboneler</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover">
+                    <thead class="text-danger font-weight-bold">
+                        <tr>
+                            <th>Hediye</th>
+                            <th>Hediye Edilen</th>
+                            <th>Abone Olan/Hediye Eden</th>
+                            <th>Seviye</th>
+                            <th>Mesaj</th>
+                            <th>Kac Aylik Abone</th>
+                            <th>Yeni Abonelik Suresi</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var subscriber in subscribers)
+                        {
+                            <tr>
+                                <td class="@((subscriber.IsGift ?? false) ?  "text-success" : "")">@((subscriber.IsGift ?? false) ? "Evet" : "Hayir" )</td>
+                                <td>@subscriber.RecipientDisplayName</td>
+                                <td>@subscriber.DisplayName</td>
+                                <td>@subscriber.SubscriptionPlan</td>
+                                <td>@subscriber.SubMessage</td>
+                                <td>@subscriber.Months</td>
+                                <td>@subscriber.MultiMonthDuration</td>
+                                <td>@subscriber.Time</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    <div class="card bg-dark mt-4">
+        <div class="card-body">
+            <h2 class="card-title text-primary text-center">Bitler</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover">
+                    <thead class="text-primary font-weight-bold">
+                        <tr>
+                            <th>Kullanici</th>
+                            <th>Bit Miktari</th>
+                            <th>Mesaj</th>
+                            <th>Tarih</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var bit in bits)
+                        {
+                            <tr>
+                                <td>@bit.Username</td>
+                                <td>@bit.BitsUsed</td>
+                                <td>@bit.ChatMessage</td>
+                                <td>@DateTime.Parse(bit.Time)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+
+    @if (tips != null)
+    {
+        <div class="card bg-dark mt-4">
+            <div class="card-body">
+                <h2 class="card-title text-success text-center">Bagislar</h2>
+                <div class="table-responsive">
+                    <table class="table table-dark table-striped table-hover">
+                        <thead class="text-success font-weight-bold">
+                            <tr>
+                                <th>Kullanici</th>
+                                <th>Tutar</th>
+                                <th>Mesaj</th>
+                                <th>Tarih</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var tip in tips)
+                            {
+                                <tr>
+                                    <td>@tip.Name</td>
+                                    <td>@(decimal.Parse(tip.Amount, System.Globalization.CultureInfo.InvariantCulture).ToString("#0.00") + " " + tip.Currency )</td>
+                                    <td>@tip.Message</td>
+                                    <td>@DateTime.Parse(tip.CreatedAt)</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    }
+}
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    private Subscriber[] subscribers;
+    private Bit[] bits;
+    private Tip[] tips;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+
+        var channelId = await TwitchService.GetChannelId(authState);
+        bits = await TwitchService.GetAllBits(channelId);
+        subscribers = await TwitchService.GetAllSubscribers(channelId);
+        tips = await TwitchService.GetAllTips(authState);
+    }
+}

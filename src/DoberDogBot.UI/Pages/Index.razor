@@ -1,0 +1,28 @@
+﻿@page "/"
+@inject NavigationManager NavManager
+
+<AuthorizeView>
+    <Authorized>
+        <div>
+            <h2>@context.User.Claims.FirstOrDefault(x => x.Type == "urn:twitch:displayname")?.Value</h2>
+            <p>@context.User.Claims.FirstOrDefault(x => x.Type == "urn:twitch:description")?.Value</p>
+            <img src="@context.User.Claims.FirstOrDefault(x => x.Type == "urn:twitch:profileimageurl")?.Value" />
+        </div>
+    </Authorized>
+    <NotAuthorized>
+    </NotAuthorized>
+
+</AuthorizeView>
+
+@code {
+    [CascadingParameter]
+    private Task<AuthenticationState> authenticationStateTask { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var authState = await authenticationStateTask;
+
+        if (!authState.User.Identity.IsAuthenticated)
+            NavManager.NavigateTo("/fetchdatadonation");
+    }
+}

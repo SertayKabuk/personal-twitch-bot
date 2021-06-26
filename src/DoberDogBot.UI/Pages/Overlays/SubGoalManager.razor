@@ -1,0 +1,19 @@
+﻿@layout EmptyLayout
+@page "/subgoalmanager"
+@using Microsoft.AspNetCore.WebUtilities
+@using DoberDogBot.UI.Data
+@inject NavigationManager NavigationManager
+@inject TwitchService TwitchService
+
+@code {
+
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+        var streamerIdqs = QueryHelpers.ParseQuery(uri.Query).GetValueOrDefault("key");
+        var sessionId = QueryHelpers.ParseQuery(uri.Query).GetValueOrDefault("sessionId");
+
+        await TwitchService.UpdateSubGoalCount(streamerIdqs.ToString(), sessionId.ToString());
+    }
+}

@@ -1,0 +1,19 @@
+﻿<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>net5.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Autofac" Version="6.2.0" />
+    <PackageReference Include="Autofac.Extensions.DependencyInjection" Version="7.1.0" />
+    <PackageReference Include="AutoMapper.Extensions.Microsoft.DependencyInjection" Version="8.1.1" />
+    <PackageReference Include="Serilog.AspNetCore" Version="4.1.0" />
+  </ItemGroup>
+  
+  <ItemGroup>
+    <ProjectReference Include="..\DoberDogBot.Infrastructure\DoberDogBot.Infrastructure.csproj" />
+    <ProjectReference Include="..\DoberDogBot.Domain\DoberDogBot.Domain.csproj" />
+  </ItemGroup>
+
+</Project>

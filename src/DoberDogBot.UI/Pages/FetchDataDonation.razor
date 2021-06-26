@@ -1,0 +1,81 @@
+﻿@page "/fetchdatadonation"
+
+@using DoberDogBot.UI.Data
+@using DoberDogBot.UI.Models
+@inject TwitchService TwitchService
+
+@if (donationBase == null)
+{
+    <p><em>Loading...</em></p>
+}
+else
+{
+    <div class="card bg-dark mt-4">
+        <div class="card-body">
+            @foreach (var total in donationBase.TotalDonation)
+            {
+                <h3 class="card-title text-info text-left">@total</h3>
+            }
+            <br />
+            <br />
+            <br />
+            <h2 class="card-title text-danger text-center">Bagis Detaylari</h2>
+            <div class="table-responsive">
+                <table class="table table-dark table-striped table-hover">
+                    <thead class="text-danger font-weight-bold">
+                        <tr>
+                            <th>Bagis Yapan</th>
+                            <th>Bagis Tipi</th>
+                            <th>Bagis Tutari</th>
+                            <th>Bagis Tarihi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var donation in donationBase.Donations)
+                        {
+                            <tr class="@GetCss(donation.DonationType)">
+                                <td>@donation.DonorName</td>
+                                <td>@donation.DonationType</td>
+                                <td>@($"{donation.DonationAmount} {donation.DonationAmountDetail}")</td>
+                                <td>@donation.DonationDate</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+}
+
+@code {
+    private DonationBaseModel donationBase;
+
+    protected override async Task OnInitializedAsync()
+    {
+        donationBase = await TwitchService.GetAllSupportDonation();
+    }
+
+    private string GetCss(string donationType)
+    {
+        var donationTypeCss = "";
+
+        switch (donationType)
+        {
+            case "tip":
+                donationTypeCss = "text-success";
+                break;
+            case "bit":
+                donationTypeCss = "text-warning";
+                break;
+            case "sub":
+                donationTypeCss = "text-primary";
+                break;
+            default:
+                break;
+        }
+
+        return donationTypeCss;
+    }
+}
+
+

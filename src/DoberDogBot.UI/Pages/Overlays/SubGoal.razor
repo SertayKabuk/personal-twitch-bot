@@ -1,0 +1,119 @@
+﻿@layout EmptyLayout
+@page "/subgoal"
+@using Microsoft.AspNetCore.WebUtilities
+@using Microsoft.AspNetCore.SignalR.Client
+@using DoberDogBot.UI.Data
+@inject NavigationManager NavigationManager
+@inject TwitchService TwitchService
+@implements IAsyncDisposable
+<html>
+<head>
+    @*Heroku app sleep fix*@
+    <meta http-equiv="refresh" content="300">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Balsamiq+Sans:ital@1&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Baloo+Tammudu+2:wght@500&display=swap" rel="stylesheet">
+    <style>
+        body {
+            color: rgb(56, 227, 242);
+            background-color: rgba(0, 0, 0, 0);
+            margin: 0px auto;
+            overflow: hidden;
+            font-family: 'Baloo Tammudu 2', cursive;
+            font-size: 50px;
+        }
+
+        .pvw-title span {
+            display: none;
+        }
+
+        .pvw-title:after {
+            content: 'Daily Sub Goal: ';
+        }
+    </style>
+    <style>
+        .my-reconnect-modal > div {
+        }
+
+        .components-reconnect-hide > div {
+            display: none;
+        }
+
+        .components-reconnect-show > div {
+            display: none;
+        }
+
+        .components-reconnect-show > .show {
+            display: none;
+        }
+
+        .components-reconnect-failed > div {
+            display: none;
+        }
+
+        .components-reconnect-failed > .failed {
+            display: none;
+        }
+
+        .components-reconnect-rejected > div {
+            display: none;
+        }
+
+        .components-reconnect-rejected > .rejected {
+            display: none;
+        }
+    </style>
+</head>
+<body>
+    <span class="pvw-title"></span><span id="subcount">@subCount</span>/@goal
+    <div id="components-reconnect-modal" class="my-reconnect-modal components-reconnect-hide">
+        <div class="show">
+        </div>
+        <div class="failed">
+        </div>
+        <div class="rejected">
+        </div>
+    </div>
+</body>
+</html>
+
+@code {
+    private HubConnection hubConnection;
+    private string subCount = "0";
+    private string goal;
+
+    protected override async Task OnInitializedAsync()
+    {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+
+        var goalqs = QueryHelpers.ParseQuery(uri.Query).GetValueOrDefault("goal");
+        var streamerIdqs = QueryHelpers.ParseQuery(uri.Query).GetValueOrDefault("key");
+
+        goal = goalqs;
+
+        hubConnection = new HubConnectionBuilder()
+        .WithUrl(NavigationManager.ToAbsoluteUri("/twitchsubhub"))
+        .Build();
+
+        hubConnection.On<int>("ReceiveMessage", message =>
+        {
+            subCount = message.ToString();
+            StateHasChanged();
+        });
+
+        await hubConnection.StartAsync();
+
+        await hubConnection.SendAsync("AddToGroup", streamerIdqs.ToString());
+
+        subCount = (await TwitchService.GetLastSessionSubCount(streamerIdqs.ToString())).ToString();
+    }
+
+    public bool IsConnected =>
+hubConnection.State == HubConnectionState.Connected;
+
+    public async ValueTask DisposeAsync()
+    {
+        await hubConnection.DisposeAsync();
+    }
+}
