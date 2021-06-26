@@ -11,7 +11,6 @@ COPY ["DoberDogBot.UI/DoberDogBot.UI.csproj", "DoberDogBot.UI/"]
 COPY ["DoberDogBot.Infrastructure/DoberDogBot.Infrastructure.csproj", "DoberDogBot.Infrastructure/"]
 COPY ["DoberDogBot.Application/DoberDogBot.Application.csproj", "DoberDogBot.Application/"]
 COPY ["DoberDogBot.Domain/DoberDogBot.Domain.csproj", "DoberDogBot.Domain/"]
-COPY ["AspNet.Security.OAuth.Streamlabs/AspNet.Security.OAuth.Streamlabs.csproj", "AspNet.Security.OAuth.Streamlabs/"]
 RUN dotnet restore "DoberDogBot.UI/DoberDogBot.UI.csproj"
 COPY . .
 WORKDIR "/src/DoberDogBot.UI"
