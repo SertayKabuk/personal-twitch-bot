@@ -71,6 +71,7 @@ namespace DoberDogBot.Worker
                     services.AddScoped<IMessageService, MessageService>();
                     services.AddScoped<IBotRepository, BotRepository>();
                     services.AddScoped<ISubscriberRepository, SubscriberRepository>();
+                    services.AddScoped<IStreamerRepository, StreamerRepository>();
 
                     services.AddHttpClient();
 

@@ -16,6 +16,6 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
             _banDate = banDate;
         }
 
-        public DateTime GetBanDate() => _banDate;
+        public DateTime GetBanDate => _banDate;
     }
 }

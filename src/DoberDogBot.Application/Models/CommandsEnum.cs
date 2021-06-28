@@ -17,6 +17,8 @@ namespace DoberDogBot.Application.Models
         public static CommandsEnum Pet = new(11, "!pet");
         public static CommandsEnum SubWelcome = new(12, "SubWelcome");
         public static CommandsEnum PokeChatter = new(13, "PokeChatter");
+        public static CommandsEnum StreamStart = new(14, "StreamStart");
+        public static CommandsEnum StreamEnd = new(15, "StreamEnd");
 
         public CommandsEnum(int id, string name) : base(id, name)
         {

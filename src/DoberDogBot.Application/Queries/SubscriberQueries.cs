@@ -7,29 +7,36 @@ namespace DoberDogBot.Application.Queries
 {
     public class SubscriberQueries : ISubscriberQueries
     {
-        private readonly IDbContextFactory<AppDbContext> _dbFactory;
+        private readonly AppDbContext _dbContext;
 
-        public SubscriberQueries(IDbContextFactory<AppDbContext> dbFactor)
+        public SubscriberQueries(AppDbContext dbContext)
         {
-            _dbFactory = dbFactor;
+            _dbContext = dbContext;
         }
 
-        public async Task<int> GetLastSessionSubCount(string channelId)
+        public async Task<int> GetActiveSessionSubCount(string channelId)
         {
-            using var dbContext = _dbFactory.CreateDbContext();
+            int subCount = 0;
 
-            var lastSessionId = await dbContext.Subscribers.OrderByDescending(x => x.Id).Where(x => x.ChannelId == channelId).Select(x => x.SessionId).FirstOrDefaultAsync();
+            var streamer = await _dbContext.Streamers.SingleOrDefaultAsync(x => EF.Property<string>(x, "_channelId") == channelId);
 
-            int subCount = await dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == lastSessionId).CountAsync();
+            if (streamer != null)
+            {
+                await _dbContext.Entry(streamer).Collection(i => i.StreamerSessions).LoadAsync();
 
+                var lastSessionId = streamer.StreamerSessions.LastOrDefault(x => x.StreamEndDate == null)?.SessionId;
+
+                if (lastSessionId != null)
+                {
+                    subCount = await _dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == lastSessionId).CountAsync();
+                }
+            }
             return subCount;
         }
 
         public async Task<int> GetDailySubCount(string channelId, string sessionId)
         {
-            using var dbContext = _dbFactory.CreateDbContext();
-
-            int subCount = await dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == sessionId).CountAsync();
+            int subCount = await _dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == sessionId).CountAsync();
 
             return subCount;
         }

@@ -110,10 +110,16 @@
     }
 
     public bool IsConnected =>
-hubConnection.State == HubConnectionState.Connected;
+        hubConnection.State == HubConnectionState.Connected;
 
     public async ValueTask DisposeAsync()
     {
+        var uri = NavigationManager.ToAbsoluteUri(NavigationManager.Uri);
+
+        var streamerIdqs = QueryHelpers.ParseQuery(uri.Query).GetValueOrDefault("key");
+
+        await hubConnection.SendAsync("RemoveFromGroup", streamerIdqs.ToString());
+
         await hubConnection.DisposeAsync();
     }
 }

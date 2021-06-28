@@ -9,9 +9,9 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class BotOnJoinedCommand : BaseCommand
+    public class BotOnJoinCommand : BaseCommand
     {
-        public BotOnJoinedCommand()
+        public BotOnJoinCommand()
         {
             CommandName = CommandsEnum.BotOnJoined.Name;
         }
@@ -21,11 +21,11 @@ namespace DoberDogBot.Application.Commands
     {
         public BotOnJoinedCommandProfile()
         {
-            CreateMap<BotOnJoinedCommand, BotOnJoinedDomainCommand>();
+            CreateMap<BotOnJoinCommand, BotOnJoinDomainCommand>();
         }
     }
 
-    public class BotOnJoinedHandler : IRequestHandler<BotOnJoinedCommand>
+    public class BotOnJoinedHandler : IRequestHandler<BotOnJoinCommand>
     {
         private readonly IMapper _mapper;
         private readonly IBotRepository _botRepository;
@@ -36,18 +36,17 @@ namespace DoberDogBot.Application.Commands
             _botRepository = botRepository;
         }
 
-        public async Task<Unit> Handle(BotOnJoinedCommand request, CancellationToken cancellationToken)
+        public async Task<Unit> Handle(BotOnJoinCommand request, CancellationToken cancellationToken)
         {
             var bot = await _botRepository.GetAsync(request.BotId);
 
             if (bot == null)
             {
-                bot = new Bot(request.BotId, null, DateTime.Now, false, string.Empty);
+                bot = new Bot(request.BotId, null, DateTime.UtcNow, false, string.Empty);
                 _botRepository.Add(bot);
             }
 
-            bot.BotOnJoined(_mapper.Map<BotOnJoinedDomainCommand>(request));
-
+            bot.BotOnJoin(_mapper.Map<BotOnJoinDomainCommand>(request));
 
             await _botRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
