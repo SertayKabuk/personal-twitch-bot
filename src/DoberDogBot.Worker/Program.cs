@@ -1,19 +1,20 @@
 using Autofac;
 using Autofac.Extensions.DependencyInjection;
-using DoberDogBot.Application.Commands;
 using DoberDogBot.Application.AutofacModules;
+using DoberDogBot.Application.Commands;
 using DoberDogBot.Application.Extensions;
 using DoberDogBot.Application.Models;
+using DoberDogBot.Application.Queries;
 using DoberDogBot.Domain.AggregatesModel.BotAggregate;
+using DoberDogBot.Domain.AggregatesModel.SubscriberAggregate;
 using DoberDogBot.Infrastructure.AppDb;
 using DoberDogBot.Infrastructure.AppDb.Repositories;
+using DoberDogBot.Infrastructure.BotDb.Repositories;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
 using Serilog;
-using DoberDogBot.Infrastructure.BotDb.Repositories;
-using DoberDogBot.Domain.AggregatesModel.SubscriberAggregate;
 
 namespace DoberDogBot.Worker
 {
@@ -71,10 +72,10 @@ namespace DoberDogBot.Worker
                     services.AddScoped<IMessageService, MessageService>();
                     services.AddScoped<IBotRepository, BotRepository>();
                     services.AddScoped<ISubscriberRepository, SubscriberRepository>();
+                    services.AddScoped<IStreamerRepository, StreamerRepository>();
+                    services.AddScoped<IStreamerQueries, StreamerQueries>();
 
                     services.AddHttpClient();
-
-                    //services.AddEntityFrameworkNpgsql();
 
                     services.AddDbContext<AppDbContext>((serviceProvider, options) =>
                     {
@@ -97,7 +98,6 @@ namespace DoberDogBot.Worker
                         string connStr = $"Server={pgHost};Port={pgPort};User Id={pgUser};Password={pgPass};Database={pgDb};Sslmode=Require;Trust Server Certificate=true;";
 
                         options.UseNpgsql(connStr);
-                        //options.UseInternalServiceProvider(serviceProvider);
                     });
 
                     services.AddHostedService<Worker>();

@@ -1,6 +1,7 @@
 ﻿using DoberDogBot.Domain.Events;
 using MediatR;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -17,14 +18,22 @@ namespace DoberDogBot.Application.DomainEventHandlers
 
         public virtual Task Handle(T notification, CancellationToken cancellationToken)
         {
-            if (string.IsNullOrEmpty(notification.Channel) || string.IsNullOrEmpty(notification.Message))
+            try
             {
-                logger.LogWarning("Empty response:" + notification.GetType().Name);
-                return Task.CompletedTask;
-            }
 
-            if (notification.TwitchClient != null)
-                notification.TwitchClient.SendMessage(notification.Channel, notification.Message);
+                if (string.IsNullOrEmpty(notification.Channel) || string.IsNullOrEmpty(notification.Message))
+                {
+                    logger.LogWarning("Empty response:" + notification.GetType().Name);
+                    return Task.CompletedTask;
+                }
+
+                if (notification.TwitchClient != null)
+                    notification.TwitchClient.SendMessage(notification.Channel, notification.Message);
+            }
+            catch (Exception ex)
+            {
+                logger.LogError(ex, ex.Message);
+            }
 
             return Task.CompletedTask;
         }

@@ -38,7 +38,9 @@ namespace DoberDogBot.UI
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            services.AddDbContextFactory<AppDbContext>(options =>
+            services.AddLogging();
+
+            services.AddDbContext<AppDbContext>(options =>
             {
                 // Heroku provides PostgreSQL connection URL via env variable
                 var connUrl = Configuration.GetValue<string>("DATABASE_URL");
@@ -61,15 +63,14 @@ namespace DoberDogBot.UI
                 options.UseNpgsql(connStr);
             });
 
-            services.AddScoped(p => p.GetRequiredService<IDbContextFactory<AppDbContext>>().CreateDbContext());
-
             services.AddDefaultIdentity<IdentityUser>().AddEntityFrameworkStores<AppDbContext>().AddDefaultTokenProviders();
 
             services.AddScoped<AuthenticationStateProvider, ServerAuthenticationStateProvider>();
-            services.AddSingleton<ISubscriberQueries, SubscriberQueries>();
+            services.AddScoped<ISubscriberQueries, SubscriberQueries>();
 
             services.AddRazorPages();
             services.AddServerSideBlazor();
+
             services.AddSingleton<TwitchService>();
             services.AddResponseCompression(opts =>
             {

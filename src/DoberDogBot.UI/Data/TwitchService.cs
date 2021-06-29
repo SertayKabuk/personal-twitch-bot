@@ -2,10 +2,8 @@ using DoberDogBot.Application.Queries;
 using DoberDogBot.Domain.AggregatesModel.BitAggregate;
 using DoberDogBot.Domain.AggregatesModel.SubscriberAggregate;
 using DoberDogBot.Domain.AggregatesModel.TipAggregate;
-using DoberDogBot.UI.Hubs;
 using DoberDogBot.UI.Models;
 using Microsoft.AspNetCore.Components.Authorization;
-using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
@@ -25,17 +23,13 @@ namespace DoberDogBot.UI.Data
         private readonly ILogger<TwitchService> _logger;
         private readonly string _channelId;
         private readonly string _channel;
-        private readonly IHubContext<TwitchSubHub> _hubContext;
-        private readonly ISubscriberQueries _subscriberQueries;
 
         public TwitchService(IHttpClientFactory clientFactory, IServiceScopeFactory scopeFactory, ILogger<TwitchService> logger,
-            IConfiguration configuration, IHubContext<TwitchSubHub> hubContext, ISubscriberQueries subscriberQueries)
+            IConfiguration configuration)
         {
             _http = clientFactory.CreateClient();
             _scopeFactory = scopeFactory;
             _logger = logger;
-            _hubContext = hubContext;
-            _subscriberQueries = subscriberQueries;
 
             _channelId = configuration.GetValue<string>("BROADCASTER_CHANNELID");
             _channel = configuration.GetValue<string>("BROADCASTER_CHANNEL");
@@ -43,16 +37,15 @@ namespace DoberDogBot.UI.Data
 
         public async Task<int> GetLastSessionSubCount(string channelId)
         {
-            var subCount = await _subscriberQueries.GetLastSessionSubCount(channelId);
+            _logger.LogInformation("GetLastSessionSubCount: {ChannelId}", channelId);
+
+            using var scope = _scopeFactory.CreateScope();
+
+            var subscriberQueries = scope.ServiceProvider.GetRequiredService<ISubscriberQueries>();
+
+            var subCount = await subscriberQueries.GetActiveSessionSubCount(channelId);
 
             return subCount;
-        }
-
-        public async Task UpdateSubGoalCount(string channelId, string sessionId)
-        {
-            var subCount = await _subscriberQueries.GetDailySubCount(channelId, sessionId);
-
-            await _hubContext.Clients.Group(channelId).SendAsync("ReceiveMessage", subCount);
         }
 
         public Task<DonationBaseModel> GetAllSupportDonation()

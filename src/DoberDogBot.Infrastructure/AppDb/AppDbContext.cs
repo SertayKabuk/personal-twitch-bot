@@ -44,6 +44,8 @@ namespace DoberDogBot.Infrastructure.AppDb
         {
             modelBuilder.ApplyConfiguration(new BotEntityTypeConfiguration());
             modelBuilder.ApplyConfiguration(new BanEntityTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new StreamerEntityTypeConfiguration());
+            modelBuilder.ApplyConfiguration(new StreamerSessionEntityTypeConfiguration());
             base.OnModelCreating(modelBuilder);
         }
 

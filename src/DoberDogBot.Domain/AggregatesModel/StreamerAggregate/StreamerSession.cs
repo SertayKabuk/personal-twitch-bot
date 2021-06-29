@@ -20,8 +20,9 @@ namespace DoberDogBot.Domain.AggregatesModel.StreamerAggregate
             _streamEnd = streamEnd;
         }
 
-        public string GetStreamStartDate() => _streamStart;
-        public string GetStreamEndDate() => _streamEnd;
+        public string StreamStartDate => _streamStart;
+        public string StreamEndDate => _streamEnd;
+        public int PlayDelay => _playDelay;
 
         public void SetStreamEndDate(string streamEnd)
         {

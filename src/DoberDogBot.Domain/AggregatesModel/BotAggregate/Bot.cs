@@ -20,7 +20,8 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
 
         private int getRandomChatterNameIteration = 0;
 
-        protected Bot() { 
+        protected Bot()
+        {
             _bans = new();
         }
 
@@ -144,7 +145,7 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
             {
                 if (!command.ChatMessage.IsBroadcaster)
                 {
-                    AddBan(command.ChatMessage.DisplayName.ToLower(), DateTime.Now);
+                    AddBan(command.ChatMessage.DisplayName.ToLower(), DateTime.UtcNow);
 
                     @event = new AttackToBroadcasterPreventedEvent { Channel = command.Channel, TwitchClient = command.TwitchClient, DomainResult = domainResult };
                 }
@@ -230,11 +231,11 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
                 AddDomainEvent(@event);
         }
 
-        public void BotOnJoined(BotOnJoinedDomainCommand command)
+        public void BotOnJoin(BotOnJoinDomainCommand command)
         {
             _bans.Clear();
             _lastSleepTime = null;
-            _wakeupTime = DateTime.Now;
+            _wakeupTime = DateTime.UtcNow;
             _wakeLock = false;
             _lastPokedChatterDisplayName = string.Empty;
             getRandomChatterNameIteration = 0;
@@ -257,8 +258,8 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
 
         public void AutoSleep(AutoSleepDomainCommand command)
         {
-            _lastSleepTime = DateTime.Now;
-            _wakeupTime = DateTime.Now.AddMinutes(command.SleepDurationInMinutes);
+            _lastSleepTime = DateTime.UtcNow;
+            _wakeupTime = DateTime.UtcNow.AddMinutes(command.SleepDurationInMinutes);
 
             var domainResult = DomainResult.Success;
 
@@ -284,7 +285,7 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
         public void AutoWake(AutoWakeDomainCommand command)
         {
             _lastSleepTime = null;
-            _wakeupTime = DateTime.Now;
+            _wakeupTime = DateTime.UtcNow;
 
             var domainResult = DomainResult.Success;
 
@@ -352,7 +353,7 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
 
             if (CheckCommandAuth(command.ChatMessage.IsBroadcaster, command.ChatMessage.IsModerator, commandOption))
             {
-                _lastSleepTime = DateTime.Now;
+                _lastSleepTime = DateTime.UtcNow;
                 _wakeupTime = DateTime.MaxValue;
                 _wakeLock = true;
 
@@ -393,7 +394,7 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
             if (CheckCommandAuth(command.ChatMessage.IsBroadcaster, command.ChatMessage.IsModerator, commandOption))
             {
                 _lastSleepTime = null;
-                _wakeupTime = DateTime.Now;
+                _wakeupTime = DateTime.UtcNow;
                 _wakeLock = false;
 
                 ignore = false;
@@ -444,17 +445,17 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
 
             if (_lastSleepTime.HasValue)
             {
-                if (_wakeupTime <= DateTime.Now)
+                if (_wakeupTime <= DateTime.UtcNow)
                 {
                     _lastSleepTime = null;
-                    _wakeupTime = DateTime.Now;
+                    _wakeupTime = DateTime.UtcNow;
 
                     return true;
                 }
                 else if (isBrodCaster)
                 {
                     _lastSleepTime = null;
-                    _wakeupTime = DateTime.Now;
+                    _wakeupTime = DateTime.UtcNow;
 
                     didIWakeup = true;
 
