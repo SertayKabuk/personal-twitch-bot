@@ -1,6 +1,7 @@
 using Autofac;
 using DoberDogBot.Application.Commands;
 using DoberDogBot.Application.Models;
+using DoberDogBot.Application.Queries;
 using DoberDogBot.Infrastructure.AppDb;
 using MediatR;
 using Microsoft.AspNetCore.Identity;
@@ -102,6 +103,15 @@ namespace DoberDogBot.Worker
 
                     using var scope = _scopeFactory.CreateScope();
                     var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
+
+                    var streamerQuery = scope.ServiceProvider.GetRequiredService<IStreamerQueries>();
+
+                    var lastActiveSessionId = await streamerQuery.GetLastActiveSession(_twitchOption.ChannelId);
+
+                    if (!string.IsNullOrEmpty(lastActiveSessionId))
+                    {
+                        sessionId = lastActiveSessionId;
+                    }
 
                     await mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = 0, StreamStartDate = streamData.Streams[0].StartedAt.ToString(CultureInfo.InvariantCulture) }, stoppingToken);
                 }

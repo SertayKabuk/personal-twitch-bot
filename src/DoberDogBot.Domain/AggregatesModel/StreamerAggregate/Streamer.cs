@@ -37,10 +37,10 @@ namespace DoberDogBot.Domain.AggregatesModel.StreamerAggregate
             {
                 var session = new StreamerSession(command.SessionId, command.PlayDelay, command.StreamStartDate, null);
                 _streamerSessions.Add(session);
-
-                BaseEvent @event = new StreamStartedDomainEvent { Channel = command.Channel, TwitchClient = command.TwitchClient, DomainResult = DomainResult.Success, ChannelId = command.BotId.ToString(), SessionId = command.SessionId };
-                AddDomainEvent(@event);
             }
+
+            BaseEvent @event = new StreamStartedDomainEvent { Channel = command.Channel, TwitchClient = command.TwitchClient, DomainResult = DomainResult.Success, ChannelId = command.BotId.ToString(), SessionId = command.SessionId };
+            AddDomainEvent(@event);
         }
 
         public void SetSessionEndDate(string sessionId, string streamEnd)

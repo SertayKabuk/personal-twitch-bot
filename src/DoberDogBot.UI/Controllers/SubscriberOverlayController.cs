@@ -4,6 +4,7 @@ using Microsoft.AspNetCore.Mvc;
 using Microsoft.AspNetCore.SignalR;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Logging;
+using System;
 using System.Net;
 using System.Threading.Tasks;
 
@@ -30,17 +31,26 @@ namespace DoberDogBot.UI.Controllers
         [ProducesResponseType((int)HttpStatusCode.OK)]
         public async Task<IActionResult> UpdateSubCount(string channelId, string sessionId)
         {
-            _logger.LogInformation("SubscriberOverlayController: {ChannelId} {SessionId} ", channelId, sessionId);
+            try
+            {
+                _logger.LogInformation("SubscriberOverlayController: {ChannelId} {SessionId} ", channelId, sessionId);
 
-            using var scope = _scopeFactory.CreateScope();
+                using var scope = _scopeFactory.CreateScope();
 
-            var subscriberQueries = scope.ServiceProvider.GetRequiredService<ISubscriberQueries>();
+                var subscriberQueries = scope.ServiceProvider.GetRequiredService<ISubscriberQueries>();
 
-            var subCount = await subscriberQueries.GetDailySubCount(channelId, sessionId);
+                var subCount = await subscriberQueries.GetDailySubCount(channelId, sessionId);
 
-            await _hubContext.Clients.Group(channelId).SendAsync("ReceiveMessage", subCount);
+                await _hubContext.Clients.Group(channelId).SendAsync("ReceiveMessage", subCount);
 
-            return Ok();
+                return Ok();
+            }
+            catch (Exception ex)
+            {
+                _logger.LogError(ex, "SubscriberOverlayController: {ChannelId} {SessionId} ", channelId, sessionId);
+
+                throw;
+            }
         }
     }
 }
