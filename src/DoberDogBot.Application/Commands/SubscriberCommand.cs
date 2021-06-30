@@ -1,4 +1,5 @@
 ﻿using AutoMapper;
+using DoberDogBot.Application.Attributes;
 using DoberDogBot.Application.Models;
 using DoberDogBot.Domain.AggregatesModel.SubscriberAggregate;
 using DoberDogBot.Domain.Commands;
@@ -9,6 +10,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
+    [NonTransactional]
     public class SubscriberCommand : BaseCommand
     {
         public string DisplayName { get; set; }

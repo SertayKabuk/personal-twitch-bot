@@ -33,21 +33,21 @@ namespace DoberDogBot.UI.Controllers
         {
             try
             {
-                _logger.LogInformation("SubscriberOverlayController: {ChannelId} {SessionId} ", channelId, sessionId);
-
                 using var scope = _scopeFactory.CreateScope();
 
                 var subscriberQueries = scope.ServiceProvider.GetRequiredService<ISubscriberQueries>();
 
-                var subCount = await subscriberQueries.GetDailySubCount(channelId, sessionId);
+                var subCount = await subscriberQueries.GetSessionSubCount(channelId, sessionId);
 
                 await _hubContext.Clients.Group(channelId).SendAsync("ReceiveMessage", subCount);
+
+                _logger.LogInformation("SubscriberOverlayController: {ChannelId} {SessionId} {Count}", channelId, sessionId, subCount);
 
                 return Ok();
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "SubscriberOverlayController: {ChannelId} {SessionId} ", channelId, sessionId);
+                _logger.LogError(ex, "SubscriberOverlayController: {ChannelId} {SessionId}", channelId, sessionId);
 
                 throw;
             }

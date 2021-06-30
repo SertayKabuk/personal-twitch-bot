@@ -1,10 +1,12 @@
-﻿using DoberDogBot.Domain.Extensions;
+﻿using DoberDogBot.Application.Attributes;
+using DoberDogBot.Domain.Extensions;
 using DoberDogBot.Infrastructure.AppDb;
 using MediatR;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Logging;
 using Serilog.Context;
 using System;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -25,11 +27,12 @@ namespace DoberDogBot.Application.Behavior
         public async Task<TResponse> Handle(TRequest request, CancellationToken cancellationToken, RequestHandlerDelegate<TResponse> next)
         {
             var response = default(TResponse);
-            var typeName = request.GetType().GetGenericTypeName();
+            var type = request.GetType();
+            var typeName = type.GetGenericTypeName();
 
             try
             {
-                if (_dbContext.HasActiveTransaction)
+                if (_dbContext.HasActiveTransaction || Attribute.GetCustomAttributes(type).Any(x => x is NonTransactionalAttribute))
                 {
                     return await next();
                 }

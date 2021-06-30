@@ -84,6 +84,8 @@ namespace DoberDogBot.Worker
                 //}
                 #endregion
 
+                botId = int.Parse(_twitchOption.ChannelId);
+
                 api = new TwitchAPI();
                 api.Settings.ClientId = _twitchOption.ClientId;
                 api.Settings.Secret = _twitchOption.ClientSecret;
@@ -138,8 +140,6 @@ namespace DoberDogBot.Worker
 
             if (customClient != null)
                 CloseIRCClient();
-
-            botId = int.Parse(_twitchOption.ChannelId);
 
             var chatToken = await GetAuthToken(_twitchOption.BotChannelId);
 

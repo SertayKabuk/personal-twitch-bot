@@ -34,7 +34,7 @@ namespace DoberDogBot.Application.Queries
             return subCount;
         }
 
-        public async Task<int> GetDailySubCount(string channelId, string sessionId)
+        public async Task<int> GetSessionSubCount(string channelId, string sessionId)
         {
             int subCount = await _dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == sessionId).CountAsync();
 
