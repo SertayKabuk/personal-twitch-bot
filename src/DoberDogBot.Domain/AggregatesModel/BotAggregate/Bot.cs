@@ -273,7 +273,7 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
 
             @event.Message = botEvent.GetResponseMessage(domainResult).Replace("{Channel}", command.Channel);
 
-            if (!CheckIfBotIsAwake(command.Channel, out _))
+            if (CheckIfBotIsAwake(command.Channel, out _))
             {
                 @event.DomainResult = DomainResult.Ignored;
             }
@@ -299,7 +299,7 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
 
             @event.Message = botEvent.GetResponseMessage(domainResult).Replace("{Channel}", command.Channel);
 
-            if (CheckIfBotIsAwake(command.Channel, out _))
+            if (!CheckIfBotIsAwake(command.Channel, out _))
             {
                 @event.DomainResult = DomainResult.Ignored;
             }
