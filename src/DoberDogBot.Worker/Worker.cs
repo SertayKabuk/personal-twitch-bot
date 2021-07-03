@@ -101,7 +101,6 @@ namespace DoberDogBot.Worker
                 if (streamData.Streams.Length > 0)
                 {
                     streamAlive = true;
-                    await CreateIRCClient();
 
                     using var scope = _scopeFactory.CreateScope();
                     var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
@@ -116,6 +115,8 @@ namespace DoberDogBot.Worker
                     }
 
                     await mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = 0, StreamStartDate = streamData.Streams[0].StartedAt.ToString(CultureInfo.InvariantCulture) }, stoppingToken);
+                  
+                    await CreateIRCClient();
                 }
 
                 CreatePubSubClient();
@@ -200,6 +201,7 @@ namespace DoberDogBot.Worker
                 wakeTimer?.Stop();
                 chatterTimer?.Stop();
                 customClient.Close(callDisconnect: true);
+                customClient.Dispose();
             }
             catch (Exception ex)
             {
@@ -342,7 +344,10 @@ namespace DoberDogBot.Worker
             if (streamAlive)
             {
                 _logger.LogInformation("Stream is alive. Trying to reconnect.");
-                CreateIRCClient().GetAwaiter().GetResult();
+                Task.Run(() =>
+                {
+                    CreateIRCClient().GetAwaiter().GetResult();
+                });
             }
         }
 
@@ -369,12 +374,13 @@ namespace DoberDogBot.Worker
             streamAlive = true;
             sessionId = Guid.NewGuid().ToString("N");
             _logger.LogInformation($"Stream just went up! Server time: {e.ServerTime} PlayDelay: {e.PlayDelay}");
-            CreateIRCClient().GetAwaiter().GetResult();
 
             using var scope = _scopeFactory.CreateScope();
             var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = e.PlayDelay, StreamStartDate = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) }).GetAwaiter().GetResult();
+
+            CreateIRCClient().GetAwaiter().GetResult();
         }
 
         private void OnStreamDown(object sender, OnStreamDownArgs e)
@@ -382,12 +388,13 @@ namespace DoberDogBot.Worker
             streamAlive = false;
 
             _logger.LogInformation($"Stream just went down! Server time: {e.ServerTime}");
-            CloseIRCClient();
 
             using var scope = _scopeFactory.CreateScope();
             var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             mediatr.Send(new StreamEndCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, StreamEnded = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) }).GetAwaiter().GetResult();
+         
+            CloseIRCClient();
         }
 
         private void OnChannelSubscription(object sender, OnChannelSubscriptionArgs e)
