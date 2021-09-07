@@ -115,7 +115,7 @@ namespace DoberDogBot.Worker
                     }
 
                     await mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = 0, StreamStartDate = streamData.Streams[0].StartedAt.ToString(CultureInfo.InvariantCulture) }, stoppingToken);
-                  
+
                     await CreateIRCClient();
                 }
 
@@ -139,8 +139,7 @@ namespace DoberDogBot.Worker
         {
             _logger.LogInformation($"CreateIRCClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
-            if (customClient != null)
-                CloseIRCClient();
+            CloseIRCClient();
 
             var chatToken = await GetAuthToken(_twitchOption.BotChannelId);
 
@@ -393,7 +392,7 @@ namespace DoberDogBot.Worker
             var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             mediatr.Send(new StreamEndCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, StreamEnded = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) }).GetAwaiter().GetResult();
-         
+
             CloseIRCClient();
         }
 
