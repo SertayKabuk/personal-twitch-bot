@@ -97,6 +97,8 @@ namespace DoberDogBot.Worker
 
                 var streamData = await api.Helix.Streams.GetStreamsAsync(userLogins: new List<string> { _twitchOption.Channel });
 
+                await CreateCustomClient();
+
                 //streamIsAlive
                 if (streamData.Streams.Length > 0)
                 {
@@ -116,7 +118,7 @@ namespace DoberDogBot.Worker
 
                     await mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = 0, StreamStartDate = streamData.Streams[0].StartedAt.ToString(CultureInfo.InvariantCulture) }, stoppingToken);
 
-                    await CreateIRCClient();
+                    CreateIRCClient();
                 }
 
                 CreatePubSubClient();
@@ -135,26 +137,11 @@ namespace DoberDogBot.Worker
             }
         }
 
-        private async Task CreateIRCClient()
+        private void CreateIRCClient()
         {
             _logger.LogInformation($"CreateIRCClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
             CloseIRCClient();
-
-            var chatToken = await GetAuthToken(_twitchOption.BotChannelId);
-
-            ConnectionCredentials credentials = new(_twitchOption.BotName, chatToken.Key);
-
-            var clientOptions = new ClientOptions
-            {
-                MessagesAllowedInPeriod = _twitchOption.MessagesAllowedInPeriod,
-                ThrottlingPeriod = TimeSpan.FromSeconds(_twitchOption.ThrottlingPeriodInSeconds)
-            };
-
-            customClient = new(clientOptions);
-
-            _client = new TwitchClient(customClient);
-            _client.Initialize(credentials, _twitchOption.Channel);
 
             _client.OnLog += Client_OnLog;
             _client.OnJoinedChannel += Client_OnJoinedChannel;
@@ -170,6 +157,26 @@ namespace DoberDogBot.Worker
 
             if (_botOptions.PokeChattersEnabled)
                 SetChattersTimer();
+        }
+        private async Task CreateCustomClient()
+        {
+            customClient?.Close(callDisconnect: true);
+            customClient?.Dispose();
+
+            var chatToken = await GetAuthToken(_twitchOption.BotChannelId);
+
+            ConnectionCredentials credentials = new(_twitchOption.BotName, chatToken.Key);
+
+            var clientOptions = new ClientOptions
+            {
+                MessagesAllowedInPeriod = _twitchOption.MessagesAllowedInPeriod,
+                ThrottlingPeriod = TimeSpan.FromSeconds(_twitchOption.ThrottlingPeriodInSeconds)
+            };
+
+            customClient = new(clientOptions);
+
+            _client = new TwitchClient(customClient);
+            _client.Initialize(credentials, _twitchOption.Channel);
         }
 
         private void SetSleepTimer()
@@ -199,8 +206,7 @@ namespace DoberDogBot.Worker
                 sleepTimer?.Stop();
                 wakeTimer?.Stop();
                 chatterTimer?.Stop();
-                customClient.Close(callDisconnect: true);
-                customClient.Dispose();
+                _client?.Disconnect();
             }
             catch (Exception ex)
             {
@@ -235,6 +241,8 @@ namespace DoberDogBot.Worker
             {
                 var botAuthTokenResult = GetAuthToken(_twitchOption.ChannelId).GetAwaiter().GetResult();
                 botAuthToken = botAuthTokenResult.Key;
+
+                CreateIRCClient();
 
                 PubSubListenTopics();
                 pubSubClient.SendTopics(botAuthToken, true);
@@ -333,7 +341,7 @@ namespace DoberDogBot.Worker
         private void Client_Error(object sender, OnErrorEventArgs e)
         {
             _logger.LogError(e.Exception, "IRC Client_Error");
-            CreateIRCClient().GetAwaiter().GetResult();
+            CreateIRCClient();
         }
 
         private void Client_OnDisconnectedEvent(object sender, OnDisconnectedEventArgs e)
@@ -345,7 +353,7 @@ namespace DoberDogBot.Worker
                 _logger.LogInformation("Stream is alive. Trying to reconnect.");
                 Task.Run(() =>
                 {
-                    CreateIRCClient().GetAwaiter().GetResult();
+                    CreateIRCClient();
                 });
             }
         }
@@ -379,7 +387,7 @@ namespace DoberDogBot.Worker
 
             mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = e.PlayDelay, StreamStartDate = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) }).GetAwaiter().GetResult();
 
-            CreateIRCClient().GetAwaiter().GetResult();
+            CreateIRCClient();
         }
 
         private void OnStreamDown(object sender, OnStreamDownArgs e)
