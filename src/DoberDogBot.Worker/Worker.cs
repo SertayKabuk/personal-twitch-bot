@@ -348,14 +348,14 @@ namespace DoberDogBot.Worker
         {
             _logger.LogError("IRC Disconnected");
 
-            if (streamAlive)
-            {
-                _logger.LogInformation("Stream is alive. Trying to reconnect.");
-                Task.Run(() =>
-                {
-                    CreateIRCClient();
-                });
-            }
+            //if (streamAlive)
+            //{
+            //    _logger.LogInformation("Stream is alive. Trying to reconnect.");
+            //    Task.Run(() =>
+            //    {
+            //        CreateIRCClient();
+            //    });
+            //}
         }
 
         #endregion
