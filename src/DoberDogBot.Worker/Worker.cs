@@ -136,8 +136,8 @@ namespace DoberDogBot.Worker
                 botTokenTimer.AutoReset = false;
                 botTokenTimer.Enabled = true;
 
-                //3 hour refresh
-                streamAliveTimer = new System.Timers.Timer(1000 * 60);
+                //every 3 minutes check stream status
+                streamAliveTimer = new System.Timers.Timer(1000 * 60 * 3);
                 streamAliveTimer.Elapsed += CheckStreamIsAlive;
                 streamAliveTimer.AutoReset = true;
                 streamAliveTimer.Enabled = true;
