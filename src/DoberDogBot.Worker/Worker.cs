@@ -176,6 +176,8 @@ namespace DoberDogBot.Worker
 
             ConnectionCredentials credentials = new(_twitchOption.BotName, chatToken.Key);
 
+            _client = null;
+
             _client = new TwitchClient(customClient);
             _client.Initialize(credentials, _twitchOption.Channel);
         }
@@ -210,16 +212,8 @@ namespace DoberDogBot.Worker
 
                 if (_client != null)
                 {
+                    _client.LeaveChannel(_twitchOption.Channel);
                     _client.Disconnect();
-
-                    _client.OnLog -= Client_OnLog;
-                    _client.OnJoinedChannel -= Client_OnJoinedChannel;
-                    _client.OnMessageReceived -= Client_OnMessageReceived;
-                    _client.OnConnected -= Client_OnConnected;
-                    _client.OnError -= Client_Error;
-                    _client.OnDisconnected -= Client_OnDisconnectedEvent;
-
-                    _client = null;
                 }
             }
             catch (Exception ex)
@@ -254,7 +248,7 @@ namespace DoberDogBot.Worker
 
         private void ReConnectPubSubClient()
         {
-            _logger.LogInformation($"ClosePubSubClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
+            _logger.LogInformation($"ReConnectPubSubClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
             try
             {
@@ -268,10 +262,10 @@ namespace DoberDogBot.Worker
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ClosePubSubClient");
+                _logger.LogError(ex, "ReConnectPubSubClient");
             }
 
-            _logger.LogInformation($"ClosePubSubClient finished! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
+            _logger.LogInformation($"ReConnectPubSubClient finished! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
         }
 
         private void PubSubListenTopics()
@@ -391,11 +385,17 @@ namespace DoberDogBot.Worker
             sessionId = Guid.NewGuid().ToString("N");
             _logger.LogInformation($"Stream just went up! Server time: {e.ServerTime} PlayDelay: {e.PlayDelay}");
 
-            CloseIRCClient();
-
             CreateCustomClient().GetAwaiter().GetResult();
 
-            CreateIRCClient();
+            _client.Connect();
+
+            _client.JoinChannel(_twitchOption.Channel, true);
+
+            if (_botOptions.AutoSleepEnabled)
+                SetSleepTimer();
+
+            if (_botOptions.PokeChattersEnabled)
+                SetChattersTimer();
 
             using var scope = _scopeFactory.CreateScope();
             var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
