@@ -28,7 +28,7 @@ namespace DoberDogBot.Application.Queries
 
                 if (lastSessionId != null)
                 {
-                    subCount = await _dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == lastSessionId).CountAsync();
+                    subCount = await _dbContext.Subscribers.AsAsyncEnumerable().Where(x => x.ChannelId == channelId && x.SessionId == lastSessionId).CountAsync();
                 }
             }
             return subCount;
@@ -36,7 +36,7 @@ namespace DoberDogBot.Application.Queries
 
         public async Task<int> GetSessionSubCount(string channelId, string sessionId)
         {
-            int subCount = await _dbContext.Subscribers.Where(x => x.ChannelId == channelId && x.SessionId == sessionId).CountAsync();
+            int subCount = await _dbContext.Subscribers.AsAsyncEnumerable().Where(x => x.ChannelId == channelId && x.SessionId == sessionId).CountAsync();
 
             return subCount;
         }

@@ -5,7 +5,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class StreamEndCommand : BaseCommand
+    public class StreamEndCommand : BaseCommand<Unit>
     {
         public string StreamEnded { get; set; }
 

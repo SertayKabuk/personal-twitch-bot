@@ -1,4 +1,9 @@
-﻿using DoberDogBot.Domain.SeedWork;
+﻿using DoberDogBot.Domain.Commands;
+using DoberDogBot.Domain.Events;
+using DoberDogBot.Domain.Extensions;
+using DoberDogBot.Domain.SeedWork;
+using System;
+using System.Linq;
 
 namespace DoberDogBot.Domain.AggregatesModel.BitAggregate
 {
@@ -30,5 +35,23 @@ namespace DoberDogBot.Domain.AggregatesModel.BitAggregate
         public string Context { get; private set; }
         public bool IsDonation { get; private set; }
         public string SessionId { get; private set; }
+
+        public void BitReceived(BitDonationDomainCommand command)
+        {
+            var domainResult = DomainResult.Success;
+
+            var commandOption = command.BotOption.BotCommands.Single(x => x.Command == command.CommandName);
+
+            BaseEvent @event = new BitDonationReceivedEvent { Channel = command.Channel, TwitchClient = command.TwitchClient, DomainResult = domainResult };
+
+            var eventName = @event.GetType().Name;
+
+            var botEvent = commandOption.BotEvents.Single(x => x.Event == eventName);
+
+            @event.Message = botEvent.GetResponseMessage(domainResult).Replace("{DisplayName}", command.DisplayName).Replace("{Amount}", command.Bits);
+
+            if (@event.DomainResult == DomainResult.Success || @event.DomainResult == DomainResult.NotMommy)
+                AddDomainEvent(@event);
+        }
     }
 }

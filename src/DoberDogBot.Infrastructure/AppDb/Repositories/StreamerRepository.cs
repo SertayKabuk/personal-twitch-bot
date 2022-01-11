@@ -47,14 +47,14 @@ namespace DoberDogBot.Infrastructure.BotDb.Repositories
 
         public async Task<Streamer> GetAsync(string channelId)
         {
-            var streamer = await _context.Streamers.SingleOrDefaultAsync(x => EF.Property<string>(x, "_channelId") == channelId);
+            var streamer = await _context.Streamers.SingleOrDefaultAsync(x => Microsoft.EntityFrameworkCore.EF.Property<string>(x, "_channelId") == channelId);
 
             if (streamer == null)
             {
                 streamer = _context
                             .Streamers
                             .Local
-                            .FirstOrDefault(o => EF.Property<string>(o, "_channelId") == channelId);
+                            .FirstOrDefault(o => Microsoft.EntityFrameworkCore.EF.Property<string>(o, "_channelId") == channelId);
             }
 
             if (streamer != null)

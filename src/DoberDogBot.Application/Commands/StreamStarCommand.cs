@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class StreamStarCommand : BaseCommand
+    public class StreamStarCommand : BaseCommand<Unit>
     {
         public int PlayDelay { get; set; }
         public string StreamStartDate { get; set; }

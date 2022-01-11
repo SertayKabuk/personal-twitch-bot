@@ -5,6 +5,7 @@ using DoberDogBot.Application.Commands;
 using DoberDogBot.Application.Extensions;
 using DoberDogBot.Application.Models;
 using DoberDogBot.Application.Queries;
+using DoberDogBot.Domain.AggregatesModel.BitAggregate;
 using DoberDogBot.Domain.AggregatesModel.BotAggregate;
 using DoberDogBot.Domain.AggregatesModel.SubscriberAggregate;
 using DoberDogBot.Infrastructure.AppDb;
@@ -72,6 +73,7 @@ namespace DoberDogBot.Worker
                     services.AddScoped<IMessageService, MessageService>();
                     services.AddScoped<IBotRepository, BotRepository>();
                     services.AddScoped<ISubscriberRepository, SubscriberRepository>();
+                    services.AddScoped<IBitRepository, BitRepository>();
                     services.AddScoped<IStreamerRepository, StreamerRepository>();
                     services.AddScoped<IStreamerQueries, StreamerQueries>();
 

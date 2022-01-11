@@ -39,13 +39,14 @@ namespace DoberDogBot.Worker
         private static System.Timers.Timer wakeTimer;
         private static System.Timers.Timer botTokenTimer;
         private static System.Timers.Timer chatterTimer;
+        private static System.Timers.Timer streamAliveTimer;
         private static TwitchPubSub pubSubClient;
+        private static ClientOptions clientOptions;
         private string botAuthToken;
         private static TwitchAPI api;
         private readonly IServiceScopeFactory _scopeFactory;
         private static int botId;
         private static string sessionId;
-        private static bool streamAlive;
 
         public Worker(ILogger<Worker> logger,
             IOptions<TwitchOptions> twitchOption,
@@ -84,6 +85,14 @@ namespace DoberDogBot.Worker
                 //}
                 #endregion
 
+                clientOptions = new ClientOptions
+                {
+                    MessagesAllowedInPeriod = _twitchOption.MessagesAllowedInPeriod,
+                    ThrottlingPeriod = TimeSpan.FromSeconds(_twitchOption.ThrottlingPeriodInSeconds)
+                };
+
+                customClient = new(clientOptions);
+
                 botId = int.Parse(_twitchOption.ChannelId);
 
                 api = new TwitchAPI();
@@ -100,8 +109,6 @@ namespace DoberDogBot.Worker
                 //streamIsAlive
                 if (streamData.Streams.Length > 0)
                 {
-                    streamAlive = true;
-
                     using var scope = _scopeFactory.CreateScope();
                     var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
@@ -115,8 +122,8 @@ namespace DoberDogBot.Worker
                     }
 
                     await mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = 0, StreamStartDate = streamData.Streams[0].StartedAt.ToString(CultureInfo.InvariantCulture) }, stoppingToken);
-                  
-                    await CreateIRCClient();
+
+                    CreateIRCClient();
                 }
 
                 CreatePubSubClient();
@@ -127,6 +134,12 @@ namespace DoberDogBot.Worker
                 botTokenTimer.AutoReset = false;
                 botTokenTimer.Enabled = true;
 
+                //every 3 minutes check stream status
+                streamAliveTimer = new System.Timers.Timer(1000 * 60 * 3);
+                streamAliveTimer.Elapsed += CheckStreamIsAlive;
+                streamAliveTimer.AutoReset = true;
+                streamAliveTimer.Enabled = true;
+
                 await Task.Delay(-1, stoppingToken);
             }
             catch (Exception ex)
@@ -135,14 +148,13 @@ namespace DoberDogBot.Worker
             }
         }
 
-        private async Task CreateIRCClient()
+        private void CreateIRCClient()
         {
             _logger.LogInformation($"CreateIRCClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
-            if (customClient != null)
-                CloseIRCClient();
+            CloseIRCClient();
 
-            var chatToken = await GetAuthToken(_twitchOption.BotChannelId);
+            var chatToken = GetAuthToken(_twitchOption.BotChannelId).GetAwaiter().GetResult();
 
             ConnectionCredentials credentials = new(_twitchOption.BotName, chatToken.Key);
 
@@ -200,8 +212,8 @@ namespace DoberDogBot.Worker
                 sleepTimer?.Stop();
                 wakeTimer?.Stop();
                 chatterTimer?.Stop();
-                customClient.Close(callDisconnect: true);
-                customClient.Dispose();
+                customClient?.Close(callDisconnect: true);
+                customClient?.Dispose();
             }
             catch (Exception ex)
             {
@@ -220,17 +232,19 @@ namespace DoberDogBot.Worker
             pubSubClient.OnStreamUp += OnStreamUp;
             pubSubClient.OnStreamDown += OnStreamDown;
             pubSubClient.OnPubSubServiceError += OnPubSubServiceError;
-            pubSubClient.OnBitsReceived += OnBitsReceived;
+            pubSubClient.OnBitsReceivedV2 += OnBitsReceived;
             pubSubClient.OnChannelSubscription += OnChannelSubscription;
 
             PubSubListenTopics();
 
             pubSubClient.Connect();
+
+            _logger.LogInformation($"CreatePubSubClient finished! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
         }
 
         private void ReConnectPubSubClient()
         {
-            _logger.LogInformation($"ClosePubSubClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
+            _logger.LogInformation($"ReConnectPubSubClient started! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
             try
             {
@@ -244,8 +258,10 @@ namespace DoberDogBot.Worker
             }
             catch (Exception ex)
             {
-                _logger.LogError(ex, "ClosePubSubClient");
+                _logger.LogError(ex, "ReConnectPubSubClient");
             }
+
+            _logger.LogInformation($"ReConnectPubSubClient finished! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
         }
 
         private void PubSubListenTopics()
@@ -253,7 +269,7 @@ namespace DoberDogBot.Worker
             _logger.LogInformation($"Topics set! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
             pubSubClient.ListenToVideoPlayback(_twitchOption.ChannelId);
-            pubSubClient.ListenToBitsEvents(_twitchOption.ChannelId);
+            pubSubClient.ListenToBitsEventsV2(_twitchOption.ChannelId);
             pubSubClient.ListenToSubscriptions(_twitchOption.ChannelId);
         }
 
@@ -334,21 +350,12 @@ namespace DoberDogBot.Worker
         private void Client_Error(object sender, OnErrorEventArgs e)
         {
             _logger.LogError(e.Exception, "IRC Client_Error");
-            CreateIRCClient().GetAwaiter().GetResult();
         }
 
         private void Client_OnDisconnectedEvent(object sender, OnDisconnectedEventArgs e)
         {
             _logger.LogError("IRC Disconnected");
 
-            if (streamAlive)
-            {
-                _logger.LogInformation("Stream is alive. Trying to reconnect.");
-                Task.Run(() =>
-                {
-                    CreateIRCClient().GetAwaiter().GetResult();
-                });
-            }
         }
 
         #endregion
@@ -371,29 +378,26 @@ namespace DoberDogBot.Worker
 
         private void OnStreamUp(object sender, OnStreamUpArgs e)
         {
-            streamAlive = true;
             sessionId = Guid.NewGuid().ToString("N");
             _logger.LogInformation($"Stream just went up! Server time: {e.ServerTime} PlayDelay: {e.PlayDelay}");
+
+            CreateIRCClient();
 
             using var scope = _scopeFactory.CreateScope();
             var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             mediatr.Send(new StreamStarCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, PlayDelay = e.PlayDelay, StreamStartDate = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) }).GetAwaiter().GetResult();
-
-            CreateIRCClient().GetAwaiter().GetResult();
         }
 
         private void OnStreamDown(object sender, OnStreamDownArgs e)
         {
-            streamAlive = false;
-
             _logger.LogInformation($"Stream just went down! Server time: {e.ServerTime}");
 
             using var scope = _scopeFactory.CreateScope();
             var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
             mediatr.Send(new StreamEndCommand { Channel = _twitchOption.Channel, TwitchClient = _client, BotId = botId, BotOption = _botOptions, SessionId = sessionId, StreamEnded = DateTime.UtcNow.ToString(CultureInfo.InvariantCulture) }).GetAwaiter().GetResult();
-         
+
             CloseIRCClient();
         }
 
@@ -430,42 +434,32 @@ namespace DoberDogBot.Worker
             }).GetAwaiter().GetResult();
         }
 
-        private void OnBitsReceived(object sender, OnBitsReceivedArgs e)
+        private void OnBitsReceived(object sender, OnBitsReceivedV2Args e)
         {
-            //var isDonation = CheckIsDonation(e.ChatMessage);
+            using var scope = _scopeFactory.CreateScope();
+            var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            //using (var scope = _scopeFactory.CreateScope())
-            //{
-            //    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            //var isDonation = CheckIsDonation(e.ChatMessage);   
+            var isDonation = false;
 
-            //    dbContext.Bits.Add(new Bit
-            //    {
-            //        Id = Guid.NewGuid(),
-            //        BitsUsed = e.BitsUsed,
-            //        ChannelId = e.ChannelId,
-            //        ChannelName = e.ChannelName,
-            //        ChatMessage = e.ChatMessage,
-            //        Context = e.Context,
-            //        Time = e.Time,
-            //        TotalBitsUsed = e.TotalBitsUsed,
-            //        UserId = e.UserId,
-            //        Username = e.Username,
-            //        IsDonation = isDonation
-            //    });
-
-            //    dbContext.SaveChanges();
-            //}
-
-            //if (isDonation)
-            //{
-            //    _commandManager.Queue(new BitDonationCommand
-            //    {
-            //        Channel = e.ChannelName,
-            //        TwitchClient = _client,
-            //        DisplayName = e.Username,
-            //        Bits = e.BitsUsed.ToString(), BotOptions = _botOptions
-            //    });
-            //}
+            mediatr.Send(new BitDonationCommand
+            {
+                Channel = e.ChannelName,
+                TwitchClient = _client,
+                BotId = botId,
+                Username = e.UserName,
+                ChannelName = e.ChannelName,
+                UserId = e.UserId,
+                ChannelId = e.ChannelId,
+                Time = e.Time.ToString("s"),
+                ChatMessage = e.ChatMessage,
+                BitsUsed = e.BitsUsed,
+                TotalBitsUsed = e.TotalBitsUsed,
+                Context = e.Context,
+                IsDonation = isDonation,
+                BotOption = _botOptions,
+                SessionId = sessionId
+            }).GetAwaiter().GetResult();
         }
 
         private void OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
@@ -491,13 +485,13 @@ namespace DoberDogBot.Worker
 
                 userId = externalLogin.UserId;
 
-                var claims = dbContext.UserClaims.Where(x => x.UserId == userId);
+                var claims = dbContext.UserClaims.AsQueryable().Where(x => x.UserId == userId);
 
                 accessToken = claims.Single(x => x.ClaimType == "urn:twitch:access_token");
                 refreshToken = claims.Single(x => x.ClaimType == "urn:twitch:refresh_token");
             }
 
-            var newToken = await api.V5.Auth.RefreshAuthTokenAsync(refreshToken.ClaimValue, _twitchOption.ClientSecret);
+            var newToken = await api.Auth.RefreshAuthTokenAsync(refreshToken.ClaimValue, _twitchOption.ClientSecret);
 
             _logger.LogInformation($"NewToken acquired for : {externalLoginId}");
 
@@ -515,6 +509,30 @@ namespace DoberDogBot.Worker
             }
 
             return new KeyValuePair<string, int>(newToken.AccessToken, newToken.ExpiresIn);
+        }
+
+        private void CheckStreamIsAlive(object source, ElapsedEventArgs e)
+        {
+            _logger.LogInformation($"CheckStreamIsAlive started.");
+
+            var streamData = api.Helix.Streams.GetStreamsAsync(userLogins: new List<string> { _twitchOption.Channel }).GetAwaiter().GetResult();
+
+            bool streamIsCurrentlyAlive = streamData.Streams.Length > 0;
+
+            //try to reconnect
+            if (streamIsCurrentlyAlive && (_client == null || !_client.IsConnected))
+            {
+                _logger.LogInformation($"CheckStreamIsAlive try to reconnect");
+                CreateIRCClient();
+            }
+            //disconnect
+            else if (!streamIsCurrentlyAlive && (_client != null && _client.IsConnected))
+            {
+                _logger.LogInformation($"CheckStreamIsAlive disconnect");
+                CloseIRCClient();
+            }
+
+            _logger.LogInformation($"CheckStreamIsAlive finished.");
         }
 
         private void ReconnectPubSub(object source, ElapsedEventArgs e)

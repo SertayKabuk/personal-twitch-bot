@@ -9,7 +9,7 @@ using TwitchLib.Client.Models;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class WakeCommand : BaseCommand
+    public class WakeCommand : BaseCommand<Unit>
     {
         public ChatMessage ChatMessage { get; set; }
 

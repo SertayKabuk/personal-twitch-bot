@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class PokeChatterCommand : BaseCommand
+    public class PokeChatterCommand : BaseCommand<Unit>
     {
         public PokeChatterCommand()
         {

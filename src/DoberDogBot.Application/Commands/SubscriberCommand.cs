@@ -11,7 +11,7 @@ using System.Threading.Tasks;
 namespace DoberDogBot.Application.Commands
 {
     [NonTransactional]
-    public class SubscriberCommand : BaseCommand
+    public class SubscriberCommand : BaseCommand<Unit>
     {
         public string DisplayName { get; set; }
         public string ChannelId { get; set; }
