@@ -1,6 +1,6 @@
 ﻿using AutoMapper;
 using DoberDogBot.Application.Models;
-using DoberDogBot.Domain.AggregatesModel.BotAggregate;
+using DoberDogBot.Domain.AggregatesModel.BitAggregate;
 using DoberDogBot.Domain.Commands;
 using MediatR;
 using System.Threading;
@@ -8,10 +8,18 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class BitDonationCommand : BaseCommand
+    public class BitDonationCommand : BaseCommand<Unit>
     {
-        public string DisplayName { get; set; }
-        public string Bits { get; set; }
+        public string Username { get; set; }
+        public string ChannelName { get; set; }
+        public string UserId { get; set; }
+        public string ChannelId { get; set; }
+        public string Time { get; set; }
+        public string ChatMessage { get; set; }
+        public int BitsUsed { get; set; }
+        public int TotalBitsUsed { get; set; }
+        public string Context { get; set; }
+        public bool IsDonation { get; set; }
 
         public BitDonationCommand()
         {
@@ -30,24 +38,33 @@ namespace DoberDogBot.Application.Commands
     public class BitDonationReceivedCommandHandler : IRequestHandler<BitDonationCommand>
     {
         private readonly IMapper _mapper;
-        private readonly IBotRepository _botRepository;
+        private readonly IBitRepository _bitRepository;
 
-        public BitDonationReceivedCommandHandler(IMapper mapper, IBotRepository botRepository)
+        public BitDonationReceivedCommandHandler(IMapper mapper, IBitRepository bitRepository)
         {
             _mapper = mapper;
-            _botRepository = botRepository;
+            _bitRepository = bitRepository;
         }
 
         public async Task<Unit> Handle(BitDonationCommand request, CancellationToken cancellationToken)
         {
-            var bot = await _botRepository.GetAsync(request.BotId);
+            var bit = new Bit(request.Username,
+                request.Channel,
+                request.UserId,
+                request.ChannelId,
+                request.Time,
+                request.ChatMessage,
+                request.BitsUsed,
+                request.TotalBitsUsed,
+                request.Context,
+                request.IsDonation,
+                request.SessionId);
 
-            if (bot != null)
-            {
-                bot.BitDonation(_mapper.Map<BitDonationDomainCommand>(request));
+            _bitRepository.Add(bit);
 
-                await _botRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
-            }
+            bit.BitReceived(_mapper.Map<BitDonationDomainCommand>(request));
+
+            await _bitRepository.UnitOfWork.SaveEntitiesAsync(cancellationToken);
 
             return Unit.Value;
         }

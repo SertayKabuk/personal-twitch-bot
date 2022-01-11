@@ -4,7 +4,7 @@ using TwitchLib.Client;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class BaseCommand : IRequest
+    public class BaseCommand<TResponse> : IRequest<TResponse>
     {
         public BotOption BotOption { get; set; }
         public TwitchClient TwitchClient { get; set; }

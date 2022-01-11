@@ -9,7 +9,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class BotOnJoinCommand : BaseCommand
+    public class BotOnJoinCommand : BaseCommand<Unit>
     {
         public BotOnJoinCommand()
         {

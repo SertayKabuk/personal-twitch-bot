@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class TipDonationCommand : BaseCommand
+    public class TipDonationCommand : BaseCommand<Unit>
     {
         public string DisplayName { get; set; }
         public string Amount { get; set; }

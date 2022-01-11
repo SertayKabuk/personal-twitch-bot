@@ -8,7 +8,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Commands
 {
-    public class AutoSleepCommand : BaseCommand
+    public class AutoSleepCommand : BaseCommand<Unit>
     {
         public AutoSleepCommand()
         {

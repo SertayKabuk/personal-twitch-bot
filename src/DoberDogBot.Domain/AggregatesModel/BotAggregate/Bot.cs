@@ -70,26 +70,6 @@ namespace DoberDogBot.Domain.AggregatesModel.BotAggregate
                 AddDomainEvent(@event);
         }
 
-        public void BitDonation(BitDonationDomainCommand command)
-        {
-            var domainResult = DomainResult.Success;
-
-            var commandOption = command.BotOption.BotCommands.Single(x => x.Command == command.CommandName);
-
-            BaseEvent @event = new BitDonationReceivedEvent { Channel = command.Channel, TwitchClient = command.TwitchClient, DomainResult = domainResult };
-
-            var eventName = @event.GetType().Name;
-
-            var botEvent = commandOption.BotEvents.Single(x => x.Event == eventName);
-
-            @event.Message = botEvent.GetResponseMessage(domainResult).Replace("{DisplayName}", command.DisplayName).Replace("{Amount}", command.Bits);
-
-            if (@event.DomainResult == DomainResult.Success || @event.DomainResult == DomainResult.NotMommy)
-                AddDomainEvent(@event);
-        }
-
-
-
         public void TipDonation(TipDonationDomainCommand command)
         {
             var domainResult = DomainResult.Success;

@@ -11,7 +11,9 @@ using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Design;
 using Microsoft.EntityFrameworkCore.Storage;
 using System;
+using System.Collections.Generic;
 using System.Data;
+using System.Linq;
 using System.Threading;
 using System.Threading.Tasks;
 
@@ -128,6 +130,16 @@ namespace DoberDogBot.Infrastructure.AppDb
 
         class NoMediator : IMediator
         {
+            public IAsyncEnumerable<TResponse> CreateStream<TResponse>(IStreamRequest<TResponse> request, CancellationToken cancellationToken = default)
+            {
+                return AsyncEnumerable.Empty<TResponse>();
+            }
+
+            public IAsyncEnumerable<object> CreateStream(object request, CancellationToken cancellationToken = default)
+            {
+                return AsyncEnumerable.Empty<object>();
+            }
+
             public Task Publish<TNotification>(TNotification notification, CancellationToken cancellationToken = default) where TNotification : INotification
             {
                 return Task.CompletedTask;

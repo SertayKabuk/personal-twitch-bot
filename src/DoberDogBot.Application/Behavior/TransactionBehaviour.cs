@@ -1,4 +1,5 @@
 ﻿using DoberDogBot.Application.Attributes;
+using DoberDogBot.Application.Commands;
 using DoberDogBot.Domain.Extensions;
 using DoberDogBot.Infrastructure.AppDb;
 using MediatR;
@@ -12,7 +13,7 @@ using System.Threading.Tasks;
 
 namespace DoberDogBot.Application.Behavior
 {
-    public class TransactionBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse>
+    public class TransactionBehaviour<TRequest, TResponse> : IPipelineBehavior<TRequest, TResponse> where TRequest : BaseCommand<TResponse>
     {
         private readonly ILogger<TransactionBehaviour<TRequest, TResponse>> _logger;
         private readonly AppDbContext _dbContext;

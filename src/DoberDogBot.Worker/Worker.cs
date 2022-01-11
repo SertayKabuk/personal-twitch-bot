@@ -232,7 +232,7 @@ namespace DoberDogBot.Worker
             pubSubClient.OnStreamUp += OnStreamUp;
             pubSubClient.OnStreamDown += OnStreamDown;
             pubSubClient.OnPubSubServiceError += OnPubSubServiceError;
-            pubSubClient.OnBitsReceived += OnBitsReceived;
+            pubSubClient.OnBitsReceivedV2 += OnBitsReceived;
             pubSubClient.OnChannelSubscription += OnChannelSubscription;
 
             PubSubListenTopics();
@@ -269,7 +269,7 @@ namespace DoberDogBot.Worker
             _logger.LogInformation($"Topics set! Server time: {DateTime.UtcNow.ToString(CultureInfo.InvariantCulture)}");
 
             pubSubClient.ListenToVideoPlayback(_twitchOption.ChannelId);
-            pubSubClient.ListenToBitsEvents(_twitchOption.ChannelId);
+            pubSubClient.ListenToBitsEventsV2(_twitchOption.ChannelId);
             pubSubClient.ListenToSubscriptions(_twitchOption.ChannelId);
         }
 
@@ -434,42 +434,32 @@ namespace DoberDogBot.Worker
             }).GetAwaiter().GetResult();
         }
 
-        private void OnBitsReceived(object sender, OnBitsReceivedArgs e)
+        private void OnBitsReceived(object sender, OnBitsReceivedV2Args e)
         {
-            //var isDonation = CheckIsDonation(e.ChatMessage);
+            using var scope = _scopeFactory.CreateScope();
+            var mediatr = scope.ServiceProvider.GetRequiredService<IMediator>();
 
-            //using (var scope = _scopeFactory.CreateScope())
-            //{
-            //    var dbContext = scope.ServiceProvider.GetRequiredService<AppDbContext>();
+            //var isDonation = CheckIsDonation(e.ChatMessage);   
+            var isDonation = false;
 
-            //    dbContext.Bits.Add(new Bit
-            //    {
-            //        Id = Guid.NewGuid(),
-            //        BitsUsed = e.BitsUsed,
-            //        ChannelId = e.ChannelId,
-            //        ChannelName = e.ChannelName,
-            //        ChatMessage = e.ChatMessage,
-            //        Context = e.Context,
-            //        Time = e.Time,
-            //        TotalBitsUsed = e.TotalBitsUsed,
-            //        UserId = e.UserId,
-            //        Username = e.Username,
-            //        IsDonation = isDonation
-            //    });
-
-            //    dbContext.SaveChanges();
-            //}
-
-            //if (isDonation)
-            //{
-            //    _commandManager.Queue(new BitDonationCommand
-            //    {
-            //        Channel = e.ChannelName,
-            //        TwitchClient = _client,
-            //        DisplayName = e.Username,
-            //        Bits = e.BitsUsed.ToString(), BotOptions = _botOptions
-            //    });
-            //}
+            mediatr.Send(new BitDonationCommand
+            {
+                Channel = e.ChannelName,
+                TwitchClient = _client,
+                BotId = botId,
+                Username = e.UserName,
+                ChannelName = e.ChannelName,
+                UserId = e.UserId,
+                ChannelId = e.ChannelId,
+                Time = e.Time.ToString("s"),
+                ChatMessage = e.ChatMessage,
+                BitsUsed = e.BitsUsed,
+                TotalBitsUsed = e.TotalBitsUsed,
+                Context = e.Context,
+                IsDonation = isDonation,
+                BotOption = _botOptions,
+                SessionId = sessionId
+            }).GetAwaiter().GetResult();
         }
 
         private void OnPubSubServiceError(object sender, OnPubSubServiceErrorArgs e)
@@ -495,13 +485,13 @@ namespace DoberDogBot.Worker
 
                 userId = externalLogin.UserId;
 
-                var claims = dbContext.UserClaims.Where(x => x.UserId == userId);
+                var claims = dbContext.UserClaims.AsQueryable().Where(x => x.UserId == userId);
 
                 accessToken = claims.Single(x => x.ClaimType == "urn:twitch:access_token");
                 refreshToken = claims.Single(x => x.ClaimType == "urn:twitch:refresh_token");
             }
 
-            var newToken = await api.V5.Auth.RefreshAuthTokenAsync(refreshToken.ClaimValue, _twitchOption.ClientSecret);
+            var newToken = await api.Auth.RefreshAuthTokenAsync(refreshToken.ClaimValue, _twitchOption.ClientSecret);
 
             _logger.LogInformation($"NewToken acquired for : {externalLoginId}");
 
